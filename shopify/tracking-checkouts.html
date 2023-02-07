@@ -1,0 +1,61 @@
+<script>
+  window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(r?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(a,n);for(var o=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","removeEventProperty","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=o(p[c])};
+  heap.load(<ENV ID HERE>);
+
+  const flattenObject = (data, prefix) => {
+    var result = {}
+    for (var key in data) {
+      var currentPrefix = key;
+      if(prefix) currentPrefix =  prefix + '.' + key;
+      if (typeof data[key] == 'object' && data[key] !== null) {
+        var flatten = flattenObject(data[key], currentPrefix)
+        result = { ...result, ...flatten }
+      } else {
+        result[currentPrefix] = data[key];
+      }
+    }
+    return result
+  }
+
+  {% if first_time_accessed %}
+    window.Shopify?.checkout?.line_items?.forEach((item) => {
+      heap.track("Purchased line item", {
+        ...flattenObject(item),
+        "order_id": {{ order_id }},
+        "total_price": {{ total_price | money_without_currency }},
+        "order_number": "{{ order_number }}",
+        "customer_id": window.Shopify?.checkout?.customer_id
+      });
+    });
+
+    let attributes = flattenObject({{ attributes }});
+    // Remove line items from the checkout event. They were sent as individual events.
+    let checkoutEventProperties = {
+      ...attributes,
+      "billing_address.country_code": window.Shopify?.checkout?.billing_address?.country_code,
+      "billing_address.country": window.Shopify?.checkout?.billing_address?.country,
+      "billing_address.city": window.Shopify?.checkout?.billing_address?.city,
+      "billing_address.province": window.Shopify?.checkout?.billing_address?.province,
+      "billing_address.province_code": window.Shopify?.checkout?.billing_address?.province_code,
+      "currency": "{{currency}}",
+      "customer_id": "{{ customer.id }}",
+      "discounts.amount": {{ discounts_amount | money_without_currency }},
+      "discount.code": window.Shopify?.checkout?.discount?.code,
+      "payment_due": window.Shopify?.checkout?.payment_due,
+      "billing_address.first_name": "{{ customer.first_name }}",
+      "billing_address.last_name": "{{ customer.last_name }}",
+      "gift_cards_amount": {{ gift_cards_amount | money_without_currency }},
+      "line_items_subtotal_price": {{ line_items_subtotal_price | money_without_currency }},
+      "order_name": "{{ order_name }}",
+      "requires_shipping": {{ requires_shipping }},
+      "shipping_rate.price": {{ shipping_price | money_without_currency }},
+      "subtotal_price": window.Shopify?.checkout?.subtotal_price,
+      "total_tax": {{ tax_price | money_without_currency }},
+      "total_price": {{ total_price | money_without_currency }},
+    };
+
+    heap.track("Checkout", flattenObject(checkoutEventProperties));
+    heap.addUserProperties({ "email": "{{ email }}", customer_id: window.Shopify.checkout?.customer_id });
+
+  {% endif %}
+</script>
