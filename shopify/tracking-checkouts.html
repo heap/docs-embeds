@@ -3,12 +3,12 @@
   heap.load(<ENV ID HERE>);
 
   const flattenObject = (data, prefix) => {
-    var result = {}
-    for (var key in data) {
-      var currentPrefix = key;
-      if(prefix) currentPrefix =  prefix + '.' + key;
+    let result = {}
+    for (const key in data) {
+      const currentPrefix = key;
+      if (prefix) currentPrefix =  prefix + '.' + key;
       if (typeof data[key] == 'object' && data[key] !== null) {
-        var flatten = flattenObject(data[key], currentPrefix)
+        const flatten = flattenObject(data[key], currentPrefix)
         result = { ...result, ...flatten }
       } else {
         result[currentPrefix] = data[key];
@@ -41,6 +41,7 @@
      };
    }
 
+  {% if first_time_accessed %}
     window.Shopify?.checkout?.line_items?.forEach((item) => {
       heap.track("Purchased line item", {
         ...flattenObject(item),
@@ -73,11 +74,11 @@
       "requires_shipping": {{ requires_shipping }},
       ...getMoney("shipping_rate.price", {{ shipping_price }}),
       "subtotal_price": window.Shopify?.checkout?.subtotal_price,
-      ...getMoney("total_tax", {{ total_price }}),
+      ...getMoney("total_tax", {{ tax_price }}),
       ...getMoney("total_price", {{ total_price }}),
     };
 
     heap.track("Checkout", flattenObject(checkoutEventProperties));
     heap.addUserProperties({ "email": "{{ email }}", customer_id: window.Shopify.checkout?.customer_id });
-
+  {% endif %}
 </script>
