@@ -4,7 +4,7 @@ The tracking checkouts script is used to populate the docs for shopify at https:
 
 Helpful shopify docs:
  - [customize order status](https://help.shopify.com/en/manual/orders/status-tracking/customize-order-status)
- - [The checkout object](https://shopify.dev/api/liquid/objects/checkout?shpxid=338ca0c2-FDFC-4D5E-7B41-F6D2FF7FF884)
+ - [The checkout object](https://shopify.dev/api/liquid/objects/checkout)
 
 ## Embed 
 
