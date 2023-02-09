@@ -3,12 +3,12 @@
   heap.load(<ENV ID HERE>);
 
   const flattenObject = (data, prefix) => {
-    var result = {}
-    for (var key in data) {
-      var currentPrefix = key;
-      if(prefix) currentPrefix =  prefix + '.' + key;
+    let result = {}
+    for (const key in data) {
+      const currentPrefix = key;
+      if (prefix) currentPrefix =  prefix + '.' + key;
       if (typeof data[key] == 'object' && data[key] !== null) {
-        var flatten = flattenObject(data[key], currentPrefix)
+        const flatten = flattenObject(data[key], currentPrefix)
         result = { ...result, ...flatten }
       } else {
         result[currentPrefix] = data[key];
@@ -17,12 +17,36 @@
     return result
   }
 
+
+  const formattedCurrencies = [
+    'USD',
+    'CAD',
+    'GBP',
+    'EUR'
+  ]
+
+   const getMoney = (objKey, amount) => {
+     const withSubunitKey = `${objKey}_subunit`
+     const curr = '{{ currency }}';
+
+     if (!formattedCurrencies.includes(curr)) {
+       return {
+         [withSubunitKey] : amount
+       };
+     }
+
+     return {
+       [objKey]: amount / 100.00,
+       [withSubunitKey]: amount
+     };
+   }
+
   {% if first_time_accessed %}
     window.Shopify?.checkout?.line_items?.forEach((item) => {
       heap.track("Purchased line item", {
         ...flattenObject(item),
         "order_id": {{ order_id }},
-        "total_price": {{ total_price | money_without_currency }},
+        ...getMoney("total_price", {{ total_price }}),
         "order_number": "{{ order_number }}",
         "customer_id": window.Shopify?.checkout?.customer_id
       });
@@ -39,23 +63,22 @@
       "billing_address.province_code": window.Shopify?.checkout?.billing_address?.province_code,
       "currency": "{{currency}}",
       "customer_id": "{{ customer.id }}",
-      "discounts.amount": {{ discounts_amount | money_without_currency }},
+      ...getMoney("discounts.amount", {{ discounts_amount }}),
       "discount.code": window.Shopify?.checkout?.discount?.code,
       "payment_due": window.Shopify?.checkout?.payment_due,
       "billing_address.first_name": "{{ customer.first_name }}",
       "billing_address.last_name": "{{ customer.last_name }}",
-      "gift_cards_amount": {{ gift_cards_amount | money_without_currency }},
-      "line_items_subtotal_price": {{ line_items_subtotal_price | money_without_currency }},
+      ...getMoney("gift_cards_amount", {{ gift_cards_amount }}),
+      ...getMoney("line_items_subtotal_price", {{ line_items_subtotal_price }}),
       "order_name": "{{ order_name }}",
       "requires_shipping": {{ requires_shipping }},
-      "shipping_rate.price": {{ shipping_price | money_without_currency }},
+      ...getMoney("shipping_rate.price", {{ shipping_price }}),
       "subtotal_price": window.Shopify?.checkout?.subtotal_price,
-      "total_tax": {{ tax_price | money_without_currency }},
-      "total_price": {{ total_price | money_without_currency }},
+      ...getMoney("total_tax", {{ tax_price }}),
+      ...getMoney("total_price", {{ total_price }}),
     };
 
     heap.track("Checkout", flattenObject(checkoutEventProperties));
     heap.addUserProperties({ "email": "{{ email }}", customer_id: window.Shopify.checkout?.customer_id });
-
   {% endif %}
 </script>
